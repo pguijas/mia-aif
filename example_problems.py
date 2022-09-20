@@ -173,7 +173,6 @@ class PlanRoute(Problem):
 
         return abs(x2 - x1) + abs(y2 - y1)
 
-
 if __name__ == '__main__':
     init_state = (1, 2, 3, 4, 5, 6, 0, 7, 8)
     nodo = breadth_first_tree_search(EightPuzzle(init_state))
