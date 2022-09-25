@@ -1,4 +1,3 @@
-from mimetypes import init
 from search import Problem, breadth_first_tree_search
 
 class EightPuzzle(Problem):
@@ -176,8 +175,4 @@ class PlanRoute(Problem):
 if __name__ == '__main__':
     init_state = (1, 2, 3, 4, 5, 6, 0, 7, 8)
     nodo = breadth_first_tree_search(EightPuzzle(init_state))
-    while nodo.state != init_state:
-        print(nodo.state)
-        nodo = nodo.parent
-
-    print(init_state)
+    print(nodo.solution())
