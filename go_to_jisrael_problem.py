@@ -1,35 +1,22 @@
-from search import Problem, breadth_first_tree_search, depth_first_tree_search, depth_first_graph_search, breadth_first_graph_search
+from search import Problem, depth_first_graph_search, breadth_first_graph_search
 import logging
 import sys
+from map import Map
 
 class GoToJisraelProblem(Problem):
 
     def __init__(self, problem_file):
-        with open(problem_file, 'r', encoding="utf-8-sig") as file:
-            # Read Data
-            lines = " ".join(file.readlines())
-            elements = [int(x) for x in lines.split()]
-            
 
-            # Load Table
-            self.table_size_y, self.table_size_x  = elements[0:2]
-            self.table = []
-            for y in range(self.table_size_y):
-                r1=(2+self.table_size_x*y)
-                r2=(2+self.table_size_x*(y+1))
-                self.table.append(elements[r1:r2])    
+        self.map = Map(problem_file)
+        self.table = self.map.table
 
-            # Load goal and initial states
-            initial = tuple(elements[2+self.table_size_y*self.table_size_x:5+self.table_size_y*self.table_size_x])
-            goal = tuple(elements[5+self.table_size_y*self.table_size_x:8+self.table_size_y*self.table_size_x])
-            super().__init__(initial, goal)
+        super().__init__(self.map.initial, self.map.goal)
 
-            # Print Problem Data
-            print("Table: {} \nInit state: {} \nGoal state: {}".format(
-                "".join(["\n\t"+str(x) for x in self.table]),
-                str(initial),
-                str(goal)
-            )) 
+        print("Table: {} \nInit state: {} \nGoal state: {}".format(  # f-strings?
+            "".join(["\n\t"+str(x) for x in self.table]),
+            str(self.initial),
+            str(self.goal)
+        ))
 
     def actions(self, state):
 
@@ -43,11 +30,11 @@ class GoToJisraelProblem(Problem):
             logging.debug("Cannot up " + str(state))
             can_move = False
         
-        elif state[2] == 1 and state[1] == self.table_size_x-1:   # >
+        elif state[2] == 1 and state[1] == self.map.size_x-1:   # >
             logging.debug("Cannot right " + str(state))
             can_move = False
 
-        elif state[2] == 2 and state[0] == self.table_size_y-1:   # \/
+        elif state[2] == 2 and state[0] == self.map.size_y-1:   # \/
             logging.debug("Cannot down " + str(state))
             can_move = False
 
@@ -115,7 +102,7 @@ if __name__ == '__main__':
     # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
     #
 
-    nodo = breadth_first_graph_search(GoToJisraelProblem("exampleMap1.txt"))
+    nodo = depth_first_graph_search(GoToJisraelProblem("exampleMap1.txt"))
     print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
     print("Cost: {}".format(nodo.path_cost))
     
