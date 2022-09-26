@@ -50,7 +50,7 @@ class Map:
         with open(file, 'w', encoding="utf-8-sig") as f:
 
             # Write dimensions
-            f.write(f"{self.size_y} {self.size_x}")
+            f.write(f"{self.size_x} {self.size_y}")
 
             # Write table
             table_str = self.__repr__()
@@ -78,7 +78,7 @@ class Map:
             self.goal = (randint(0, size_y-1), randint(0, size_x-1))
 
         # Generate the terrain
-        self.table = [[randint(min_cost, max_cost) for x in range(size_x)] for y in range(size_y)]
+        self.table = [[randint(min_cost, max_cost) for x in range(size_y)] for y in range(size_x)]
 
         # Save the map in a file
         if output is not None:
@@ -88,7 +88,7 @@ class Map:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Generate a new map.')
-    parser.add_argument('--dims', type=int, default=3, help='width and height of the map')
+    parser.add_argument('--dims', type=int, nargs='+', default=[3,3], help='width and height of the map')
     parser.add_argument('--initial', type=int, nargs='+', default=[0,0], help='initial position')
     parser.add_argument('--goal', type=int, nargs='+', default=[0,0], help='goal position')   
     parser.add_argument('--min-cost', type=int, default=0, help='minimum cost of the terrain') 
@@ -97,4 +97,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     map = Map()
-    map.generate(args.dims, args.dims, args.initial, args.goal, args.min_cost, args.max_cost, args.output)
+    map.generate(*args.dims, args.initial, args.goal, args.min_cost, args.max_cost, args.output)

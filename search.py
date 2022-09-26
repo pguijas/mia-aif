@@ -185,11 +185,11 @@ def depth_first_graph_search(problem):
     while frontier:
         node = frontier.pop()
         if problem.goal_test(node.state):
-            return node
+            return node, frontier, explored
         explored.add(node.state)
         frontier.extend(child for child in node.expand(problem)
                         if child.state not in explored and child not in frontier)
-    return None
+    return None, frontier, explored
 
 
 def breadth_first_graph_search(problem):
@@ -200,7 +200,7 @@ def breadth_first_graph_search(problem):
     """
     node = Node(problem.initial)
     if problem.goal_test(node.state):
-        return node
+        return node, frontier, set()
     frontier = deque([node])
     explored = set()
     while frontier:
@@ -209,9 +209,9 @@ def breadth_first_graph_search(problem):
         for child in node.expand(problem):
             if child.state not in explored and child not in frontier:
                 if problem.goal_test(child.state):
-                    return child
+                    return child, frontier, explored
                 frontier.append(child)
-    return None
+    return None, frontier, explored
 
 
 def best_first_graph_search(problem, f, display=False):
@@ -232,7 +232,7 @@ def best_first_graph_search(problem, f, display=False):
         if problem.goal_test(node.state):
             if display:
                 print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
-            return node
+            return node, frontier, explored
         explored.add(node.state)
         for child in node.expand(problem):
             if child.state not in explored and child not in frontier:
@@ -241,7 +241,7 @@ def best_first_graph_search(problem, f, display=False):
                 if f(child) < frontier[child]:
                     del frontier[child]
                     frontier.append(child)
-    return None
+    return None, frontier, explored
 
 
 

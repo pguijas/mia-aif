@@ -102,7 +102,9 @@ if __name__ == '__main__':
     # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
     #
 
-    nodo = depth_first_graph_search(GoToJisraelProblem("exampleMap1.txt"))
+    nodo, frontier, explored = breadth_first_graph_search(GoToJisraelProblem("exampleMap.txt"))
     print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
+    print(f"Depth: {nodo.depth}")
     print("Cost: {}".format(nodo.path_cost))
-    
+    print(f"Size of the frontier: {len(frontier)}")
+    print(f"Size of the explored list: {len(explored)}")
