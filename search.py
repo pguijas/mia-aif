@@ -85,7 +85,7 @@ class Node:
             self.depth = parent.depth + 1
 
     def __repr__(self):
-        return "<Node {}>".format(self.state)
+        return f"({self.depth}, {self.path_cost}, {self.action}, {self.state})"
 
     def __lt__(self, node):
         return self.state < node.state
@@ -259,4 +259,5 @@ def astar_search(problem, h=None, display=False):
     else in your Problem subclass."""
     h = memoize(h or problem.h, 'h')
     return best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
+
 

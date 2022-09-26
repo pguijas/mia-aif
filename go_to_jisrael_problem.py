@@ -12,11 +12,11 @@ class GoToJisraelProblem(Problem):
 
         super().__init__(self.map.initial, self.map.goal)
 
-        print("Table: {} \nInit state: {} \nGoal state: {}".format(  # f-strings?
-            "".join(["\n\t"+str(x) for x in self.table]),
-            str(self.initial),
-            str(self.goal)
-        ))
+        # print("Table: {} \nInit state: {} \nGoal state: {}".format(  # f-strings?
+        #     "".join(["\n\t"+str(x) for x in self.table]),
+        #     str(self.initial),
+        #     str(self.goal)
+        # ))
 
     def actions(self, state):
 
@@ -49,7 +49,6 @@ class GoToJisraelProblem(Problem):
             return ["ROTATE_L", "ROTATE_R"]
 
     def result(self, state, action):
-
         y,x,rot = state
         if action=="ROTATE_L":
             logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot-1)%4)))
@@ -95,6 +94,39 @@ class GoToJisraelProblem(Problem):
     def h(self, node):
         pass
 
+# ______________________________________________________________________________
+# Utils
+
+def convert_numeric_orientations(node):
+
+    state = node.state
+    orientation = state[2]
+
+    if      orientation == 0: orientation = 'North'
+    elif    orientation == 1: orientation = 'East'
+    elif    orientation == 2: orientation = 'South'
+    elif    orientation == 3: orientation = 'West'
+    else:   logging.error(f"Orientation not defined for value '{orientation}'")
+
+    node.state = (state[0], state[1], orientation)
+
+
+def print_path(final_node):
+    
+    path = final_node.path()
+
+    convert_numeric_orientations(path[0])
+    logging.info(path[0])
+
+    for node in path[1:]:
+        convert_numeric_orientations(node)
+        logging.info(node.action)
+        logging.info(node)
+
+    # print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
+
+
+
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -102,9 +134,17 @@ if __name__ == '__main__':
     # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
     #
 
-    nodo, frontier, explored = breadth_first_graph_search(GoToJisraelProblem("exampleMap.txt"))
-    print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
-    print(f"Depth: {nodo.depth}")
-    print("Cost: {}".format(nodo.path_cost))
-    print(f"Size of the frontier: {len(frontier)}")
-    print(f"Size of the explored list: {len(explored)}")
+    node, frontier, explored = breadth_first_graph_search(GoToJisraelProblem("exampleMap.txt"))
+
+    logging.info("#########################################")
+    logging.info("PATH")
+    logging.info("#########################################")
+    print_path(node)
+
+    logging.info("#########################################")
+    logging.info("# ANALYTICS")
+    logging.info("#########################################")
+    logging.info(f"Path depth: {node.depth}")
+    logging.info(f"Path cost: {node.path_cost}")
+    logging.info(f"Frontier size: {len(frontier)}")
+    logging.info(f"Explored list size: {len(explored)}")
