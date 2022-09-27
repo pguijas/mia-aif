@@ -7,7 +7,7 @@ functions.
 """
 
 from collections import deque
-
+import logging
 from utils import *
 
 
@@ -92,8 +92,11 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
-        return [self.child_node(problem, action)
-                for action in problem.actions(self.state)]
+        logging.debug(f"Expanding {self}")
+        children = [self.child_node(problem, action)
+                    for action in problem.actions(self.state)]
+        logging.debug(f"Successor nodes: {children}")
+        return children
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
@@ -113,6 +116,17 @@ class Node:
             node = node.parent
         return list(reversed(path_back))
 
+    def print_path(self):
+        """Print the nodes forming the path from the root to this node."""
+        path = self.path()
+
+        logging.info(path[0])
+        for node in path[1:]:
+            logging.info(node.action)
+            logging.info(node)
+            # print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
+
+
     # We want for a queue of nodes in breadth_first_graph_search or
     # astar_search to have no duplicated states, so we treat nodes
     # with the same state as equal. [Problem: this may not be what you
@@ -127,6 +141,27 @@ class Node:
         # object itself to quickly search a node
         # with the same state in a Hash Table
         return hash(self.state)
+
+# ______________________________________________________________________________
+
+class State(tuple):
+
+    def __init__(self, x, y, orientation):
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+
+    def __new__(cls, x, y, orientation):
+        return super(State, cls).__new__(cls, tuple((x, y, orientation)))
+
+    def __repr__(self):
+        return f"({self.x}, {self.y}, {self.format_orientation(self.orientation)})"
+
+    def format_orientation(self, orientation):
+        if      orientation == 0: return 'North'
+        elif    orientation == 1: return 'East'
+        elif    orientation == 2: return 'South'
+        elif    orientation == 3: return 'West'
 
 # ______________________________________________________________________________
 # Uninformed Search algorithms
@@ -170,6 +205,130 @@ def depth_first_tree_search(problem):
     return None
 
 
+class GraphSearch():
+
+    def __init__(self, problem):
+        self.problem = problem
+        self.frontier = []
+        self.explored = set()
+        self.node = None
+        self.finished = False
+        self.generated_nodes = 0
+
+    def initialize(self):
+        """Prepare data structures (frontier) and execute the corresponding checks."""
+        raise NotImplementedError
+
+    def execute(self):
+        """Main loop of the search process."""
+
+        # First computation of the algorithm
+        self.initialize()
+        if self.finished:  # the goal node is the initial node
+            return self.node, [], set()
+
+        # Loop
+        iteration = 0
+        while self.frontier:
+            logging.debug(f"# Iteration {iteration}")
+            iteration += 1
+
+            if self.search():
+                return self.node, self.frontier, self.explored
+
+            # logging.debug(f"Frontier (size={len(self.frontier)}): {self.frontier}")
+            # logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
+
+        logging.debug(f"Cannot find a solution.")
+        return None, self.frontier, self.explored
+
+    def search(self):
+        """Execute the actions and checks of the specific search algorithm."""
+        raise NotImplementedError
+
+    def check(self, node):
+        """Check if the node is a goal node."""
+        if self.problem.goal_test(node.state):
+            logging.debug(f"Solution found: {node}")
+            self.finished = True
+            return True
+        return False
+
+
+class DepthFirstGraphSearch(GraphSearch):
+
+    def initialize(self):
+        self.frontier = [(Node(self.problem.initial))]  # Stack
+
+    def search(self):
+
+        self.node = self.frontier.pop()
+        if self.check(self.node):
+            return True
+
+        self.explored.add(self.node.state)
+        self.frontier.extend(child for child in self.node.expand(self.problem)
+                        if child.state not in self.explored and child not in self.frontier)
+
+        return False
+
+
+class BreadthFirstGraphSearch(GraphSearch):
+
+    def initialize(self):
+
+        self.node = Node(self.problem.initial)
+        self.check(self.node)
+        self.frontier = deque([self.node])
+
+    def search(self):
+
+        self.node = self.frontier.popleft()
+        self.explored.add(self.node.state)
+
+        for child in self.node.expand(self.problem):
+            if child.state not in self.explored and child not in self.frontier:
+                if self.check(child):
+                    self.node = child
+                    return True
+                self.frontier.append(child)
+
+        return False
+
+
+class BestFirstGraphSearch(GraphSearch):
+
+    def __init__(self, f):
+        super().__init__()
+        self.f = f
+
+    def initialize(self):
+        self.f = memoize(f, 'f')
+
+        self.node = Node(problem.initial)
+        self.frontier = PriorityQueue('min', f)
+        self.frontier.append(node)
+
+    def search(self):
+
+        self.node = self.frontier.pop()
+        if self.check(self.node):
+            return True
+
+        self.explored.add(self.node.state)
+
+        for child in self.node.expand(self.problem):
+
+            if child.state not in self.explored and child not in self.frontier:
+                self.frontier.append(child)
+
+            elif child in self.frontier and self.f(child) < self.frontier[child]:
+                del self.frontier[child]
+                self.frontier.append(child)
+
+        return False
+
+
 def depth_first_graph_search(problem):
     """
     [Figure 3.7]
@@ -179,16 +338,29 @@ def depth_first_graph_search(problem):
     Does not get trapped by loops.
     If two paths reach a state, only use the first one.
     """
-    frontier = [(Node(problem.initial))]  # Stack
 
+    frontier = [(Node(problem.initial))]  # Stack
     explored = set()
+    iteration = 0
+
     while frontier:
+        logging.debug(f"# Iteration {iteration}")
+        iteration += 1
+
         node = frontier.pop()
+
         if problem.goal_test(node.state):
+            logging.debug(f"Solution found: {node}")
             return node, frontier, explored
+
         explored.add(node.state)
         frontier.extend(child for child in node.expand(problem)
                         if child.state not in explored and child not in frontier)
+
+        logging.debug(f"Frontier: {frontier}")
+        logging.debug(f"Explored list: {explored}")
+
+    logging.debug(f"Cannot find a solution.")
     return None, frontier, explored
 
 
@@ -198,19 +370,33 @@ def breadth_first_graph_search(problem):
     single line as below:
     return graph_search(problem, FIFOQueue())
     """
+
     node = Node(problem.initial)
     if problem.goal_test(node.state):
-        return node, frontier, set()
+        return node, [], set()
+
     frontier = deque([node])
     explored = set()
+    iteration = 0
+
     while frontier:
+        logging.debug(f"# Iteration {iteration}")
+        iteration += 1
+
         node = frontier.popleft()
         explored.add(node.state)
         for child in node.expand(problem):
             if child.state not in explored and child not in frontier:
+
                 if problem.goal_test(child.state):
+                    logging.debug(f"Solution found: {child}")
                     return child, frontier, explored
+
                 frontier.append(child)
+                logging.debug(f"Frontier: {frontier}")
+                logging.debug(f"Explored list: {explored}")
+
+    logging.debug(f"Cannot find a solution.")
     return None, frontier, explored
 
 
@@ -222,29 +408,43 @@ def best_first_graph_search(problem, f, display=False):
     There is a subtlety: the line "f = memoize(f, 'f')" means that the f
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
+
     f = memoize(f, 'f')
     node = Node(problem.initial)
+
     frontier = PriorityQueue('min', f)
     frontier.append(node)
     explored = set()
+    iteration = 0
+
     while frontier:
+        logging.debug(f"# Iteration {iteration}")
+        iteration += 1
+
         node = frontier.pop()
+
         if problem.goal_test(node.state):
-            if display:
-                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
+            # if display:
+            #     print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
+            logging.debug(f"Solution found: {node}")
             return node, frontier, explored
+
         explored.add(node.state)
         for child in node.expand(problem):
+
             if child.state not in explored and child not in frontier:
                 frontier.append(child)
+
             elif child in frontier:
                 if f(child) < frontier[child]:
                     del frontier[child]
                     frontier.append(child)
+
+            logging.debug(f"Frontier: {frontier}")
+            logging.debug(f"Explored list: {explored}")
+
+    logging.debug(f"Cannot find a solution.")
     return None, frontier, explored
-
-
-
 
 # ______________________________________________________________________________
 # Informed (Heuristic) Search

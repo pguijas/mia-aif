@@ -1,6 +1,8 @@
-from search import Problem, depth_first_graph_search, breadth_first_graph_search
+import argparse
 import logging
 import sys
+
+from search import Problem, depth_first_graph_search, breadth_first_graph_search, State, BreadthFirstGraphSearch, DepthFirstGraphSearch
 from map import Map
 
 class GoToJisraelProblem(Problem):
@@ -10,7 +12,7 @@ class GoToJisraelProblem(Problem):
         self.map = Map(problem_file)
         self.table = self.map.table
 
-        super().__init__(self.map.initial, self.map.goal)
+        super().__init__(State(*self.map.initial), State(*self.map.goal))
 
         # print("Table: {} \nInit state: {} \nGoal state: {}".format(  # f-strings?
         #     "".join(["\n\t"+str(x) for x in self.table]),
@@ -27,19 +29,19 @@ class GoToJisraelProblem(Problem):
         # Check if can move
         can_move = True
         if state[2] == 0 and state[0] == 0:                     # /\
-            logging.debug("Cannot up " + str(state))
+            logging.debug(f"Cannot go up.")
             can_move = False
         
         elif state[2] == 1 and state[1] == self.map.size_x-1:   # >
-            logging.debug("Cannot right " + str(state))
+            logging.debug("Cannot go right.")
             can_move = False
 
         elif state[2] == 2 and state[0] == self.map.size_y-1:   # \/
-            logging.debug("Cannot down " + str(state))
+            logging.debug("Cannot go down.")
             can_move = False
 
         elif state[2] == 3 and state[1] == 0:                   # <
-            logging.debug("Cannot left " + str(state))
+            logging.debug("Cannot go left.")
             can_move = False
 
         # Return possible actions
@@ -51,29 +53,29 @@ class GoToJisraelProblem(Problem):
     def result(self, state, action):
         y,x,rot = state
         if action=="ROTATE_L":
-            logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot-1)%4)))
-            return (y,x,(rot-1)%4)
+            # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot-1)%4)))
+            return State(y,x,(rot-1)%4)
 
         elif action=="ROTATE_R":
-            logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot+1)%4)))
-            return (y,x,(rot+1)%4)
+            # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot+1)%4)))
+            return State(y,x,(rot+1)%4)
 
         elif action=="MOVE":
             if rot == 0:
-                logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,0)))
-                return (y-1,x,0)
+                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,0)))
+                return State(y-1,x,0)
 
             elif rot == 1:
-                logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x+1,1)))
-                return (y,x+1,1)
+                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x+1,1)))
+                return State(y,x+1,1)
 
-            elif rot == 2:
-                logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,2)))
-                return (y+1,x,2)
+            elif rot == 2: ################################################################ str((y-1),x,2)
+                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,2)))
+                return State(y+1,x,2)
 
             elif rot == 3:
-                logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x-1,3)))
-                return (y,x-1,3)
+                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x-1,3)))
+                return State(y,x-1,3)
 
     def goal_test(self, state):
         y1,x1,_ = state
@@ -94,52 +96,29 @@ class GoToJisraelProblem(Problem):
     def h(self, node):
         pass
 
-# ______________________________________________________________________________
-# Utils
-
-def convert_numeric_orientations(node):
-
-    state = node.state
-    orientation = state[2]
-
-    if      orientation == 0: orientation = 'North'
-    elif    orientation == 1: orientation = 'East'
-    elif    orientation == 2: orientation = 'South'
-    elif    orientation == 3: orientation = 'West'
-    else:   logging.error(f"Orientation not defined for value '{orientation}'")
-
-    node.state = (state[0], state[1], orientation)
-
-
-def print_path(final_node):
-    
-    path = final_node.path()
-
-    convert_numeric_orientations(path[0])
-    logging.info(path[0])
-
-    for node in path[1:]:
-        convert_numeric_orientations(node)
-        logging.info(node.action)
-        logging.info(node)
-
-    # print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
-
-
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+    parser = argparse.ArgumentParser(description='Solve the Jisrael problem.')
+    parser.add_argument('file', type=str, help='file with the terrain, the initial and the goal positions')
+    parser.add_argument('--debug', default=False, action='store_true', help='true to print the search process')
+    args = parser.parse_args()
+
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO)
 
     #
     # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
     #
 
-    node, frontier, explored = breadth_first_graph_search(GoToJisraelProblem("exampleMap.txt"))
+    problem = GoToJisraelProblem(args.file)
+    search = BreadthFirstGraphSearch(problem)
+    # node, frontier, explored = depth_first_graph_search(problem)
+    node, frontier, explored = search.execute()
 
     logging.info("#########################################")
     logging.info("PATH")
     logging.info("#########################################")
-    print_path(node)
+    node.print_path()
 
     logging.info("#########################################")
     logging.info("# ANALYTICS")

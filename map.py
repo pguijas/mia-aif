@@ -17,7 +17,7 @@ class Map:
 
 
     def load(self, file):
-        '''Loads the map from a file.'''
+        """Load the map from a file."""
 
         # Check that the file exists
         if not os.path.isfile(file):
@@ -45,7 +45,7 @@ class Map:
 
 
     def save(self, file):
-        '''Saves the map in a file.'''
+        """Save the map in a file."""
 
         with open(file, 'w', encoding="utf-8-sig") as f:
 
@@ -58,12 +58,12 @@ class Map:
             f.write(table_str)
 
             # Write initial and goal
-            f.write(f"\n{self.initial[0]} {self.initial[1]} -1")
-            f.write(f"\n{self.goal[0]} {self.goal[1]} -1")
+            f.write(f"\n{self.initial[0]} {self.initial[1]} 0")
+            f.write(f"\n{self.goal[0]} {self.goal[1]} 0")
 
 
     def generate(self, size_x, size_y, initial=None, goal=None, min_cost=1, max_cost=5, output=None):
-        '''Generates a new map randomized with the parameters given.'''
+        """Generate a new random map with the parameters given."""
 
         # Set the size of the table
         self.size_x, self.size_y = size_x, size_y
