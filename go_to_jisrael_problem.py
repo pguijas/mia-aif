@@ -61,21 +61,10 @@ class GoToJisraelProblem(Problem):
             return State(y,x,(rot+1)%4)
 
         elif action=="MOVE":
-            if rot == 0:
-                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,0)))
-                return State(y-1,x,0)
-
-            elif rot == 1:
-                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x+1,1)))
-                return State(y,x+1,1)
-
-            elif rot == 2: ################################################################ str((y-1),x,2)
-                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y+1,x,2)))
-                return State(y+1,x,2)
-
-            elif rot == 3:
-                # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x-1,3)))
-                return State(y,x-1,3)
+            if rot == 0:    return State(y-1,x,0)
+            elif rot == 1:  return State(y,x+1,1)
+            elif rot == 2:  return State(y+1,x,2)
+            elif rot == 3:  return State(y,x-1,3)
 
     def goal_test(self, state):
         y1,x1,_ = state
@@ -104,15 +93,14 @@ if __name__ == '__main__':
     parser.add_argument('--debug', default=False, action='store_true', help='true to print the search process')
     args = parser.parse_args()
 
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO)
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO, format='%(message)s')
 
     #
     # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
     #
 
     problem = GoToJisraelProblem(args.file)
-    search = BreadthFirstGraphSearch(problem)
-    # node, frontier, explored = depth_first_graph_search(problem)
+    search = DepthFirstGraphSearch(problem)
     node, frontier, explored = search.execute()
 
     logging.info("#########################################")
