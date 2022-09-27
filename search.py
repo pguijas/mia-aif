@@ -90,12 +90,12 @@ class Node:
     def __lt__(self, node):
         return self.state < node.state
 
-    def expand(self, problem):
-        """List the nodes reachable in one step from this node."""
+    def expand(self, problem, is_repeated=None):
+        """List the nodes reachable  (and not already created) in one step from this node."""
         logging.debug(f"Expanding {self}")
         children = [self.child_node(problem, action)
                     for action in problem.actions(self.state)]
-        logging.debug(f"Successor nodes: {children}")
+        logging.debug(f"New successors: {', '.join(str(child) for child in children if not is_repeated(child))}")
         return children
 
     def child_node(self, problem, action):
@@ -124,7 +124,6 @@ class Node:
         for node in path[1:]:
             logging.info(node.action)
             logging.info(node)
-            # print("Steps:\n\t" + "\n\t".join([str(step.action) + " -> " + str(step.state) for step in nodo.path()[1:]]))
 
 
     # We want for a queue of nodes in breadth_first_graph_search or
@@ -176,7 +175,7 @@ class GraphSearch():
         self.explored = set()
         self.node = None
         self.finished = False
-        self.generated_nodes = 0
+        self.created_nodes = 0
 
     def initialize(self):
         """Prepare data structures (frontier) and execute the corresponding checks."""
@@ -196,11 +195,13 @@ class GraphSearch():
             logging.debug(f"# Iteration {iteration}")
             iteration += 1
 
-            if self.search():
-                return self.node, self.frontier, self.explored
-
+            goal_found = self.search()
+            logging.debug(f"Created nodes: {self.created_nodes}")
             # logging.debug(f"Frontier (size={len(self.frontier)}): {self.frontier}")
             # logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
+
+            if goal_found:
+                return self.node, self.frontier, self.explored
 
         logging.debug(f"Cannot find a solution.")
         return None, self.frontier, self.explored
@@ -217,6 +218,10 @@ class GraphSearch():
             return True
         return False
 
+    def is_repeated_node(self, node):
+        """Check if the node has already been created."""
+        raise NotImplementedError()
+
 
 class DepthFirstGraphSearch(GraphSearch):
 
@@ -230,10 +235,15 @@ class DepthFirstGraphSearch(GraphSearch):
             return True
 
         self.explored.add(self.node.state)
-        self.frontier.extend(child for child in self.node.expand(self.problem)
-                        if child.state not in self.explored and child not in self.frontier)
+
+        successors = [child for child in self.node.expand(self.problem, self.is_repeated_node)]
+        self.created_nodes += len(successors)
+        self.frontier.extend(child for child in successors if not self.is_repeated_node(child))
 
         return False
+
+    def is_repeated_node(self, node):
+        return node.state in self.explored or node in self.frontier
 
 
 class BreadthFirstGraphSearch(GraphSearch):
@@ -249,14 +259,20 @@ class BreadthFirstGraphSearch(GraphSearch):
         self.node = self.frontier.popleft()
         self.explored.add(self.node.state)
 
-        for child in self.node.expand(self.problem):
-            if child.state not in self.explored and child not in self.frontier:
+        successors = self.node.expand(self.problem, self.is_repeated_node)
+        self.created_nodes += len(successors)
+
+        for child in successors:
+            if not is_repeated_node(child):
                 if self.check(child):
                     self.node = child
                     return True
                 self.frontier.append(child)
 
         return False
+
+    def is_repeated_node(self, node):
+        return node.state in self.explored or node in self.frontier
 
 
 class BestFirstGraphSearch(GraphSearch):
@@ -280,7 +296,10 @@ class BestFirstGraphSearch(GraphSearch):
 
         self.explored.add(self.node.state)
 
-        for child in self.node.expand(self.problem):
+        successors = self.node.expand(self.problem, self.is_repeated_node)
+        self.created_nodes += len(successors)
+
+        for child in successors:
 
             if child.state not in self.explored and child not in self.frontier:
                 self.frontier.append(child)
@@ -290,6 +309,12 @@ class BestFirstGraphSearch(GraphSearch):
                 self.frontier.append(child)
 
         return False
+
+    def is_repeated_node(self, node):
+
+        if child in self.frontier:  # check that the new node has a lower cost than the previously visited
+            return self.f(child) >= self.frontier[child]
+        return child.state in self.explored  # if it is not in the frontier, check if it is in the explored list
 
 
 def depth_first_graph_search(problem):
