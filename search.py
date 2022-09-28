@@ -191,7 +191,7 @@ class GraphSearch():
         # First computation of the algorithm
         self.initialize()
         if self.finished:  # the goal node is the initial node
-            return self.node, [], set()
+            return True, self.node, [], set()
 
         # Loop
         iteration = 0
