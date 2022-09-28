@@ -88,12 +88,12 @@ class Map:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Generate a new map.')
-    parser.add_argument('--dims', type=int, nargs='+', default=[3,3], help='width and height of the map')
-    parser.add_argument('--initial', type=int, nargs='+', default=[0,0], help='initial position')
-    parser.add_argument('--goal', type=int, nargs='+', default=[0,0], help='goal position')   
-    parser.add_argument('--min-cost', type=int, default=0, help='minimum cost of the terrain') 
-    parser.add_argument('--max-cost', type=int, default=5, help='maximum cost of the terrain') 
-    parser.add_argument('--output', type=str, default='./output.txt', help='file to save the map') 
+    parser.add_argument('--dims', type=int, nargs='+', default=[3,3], help='width and height of the map (default 3 3)')
+    parser.add_argument('--initial', type=int, nargs='+', default=None, help='initial position (default random)')
+    parser.add_argument('--goal', type=int, nargs='+', default=None, help='goal position (default random)')   
+    parser.add_argument('--min-cost', type=int, default=1, help='minimum cost of the terrain (default 1)') 
+    parser.add_argument('--max-cost', type=int, default=5, help='maximum cost of the terrain (default 5)') 
+    parser.add_argument('--output', type=str, default='./output.txt', help='file to save the map (default ./output.txt') 
     args = parser.parse_args()
 
     map = Map()

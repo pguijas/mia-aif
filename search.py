@@ -8,8 +8,12 @@ functions.
 
 from collections import deque
 import logging
-from utils import *
+from utils import memoize, PriorityQueue
 
+
+# ##############################################################################
+# Problem representation
+# ##############################################################################
 
 class Problem:
     """The abstract class for a formal problem. You should subclass
@@ -61,9 +65,6 @@ class Problem:
         raise NotImplementedError
 
 
-# ______________________________________________________________________________
-
-
 class Node:
     """A node in a search tree. Contains a pointer to the parent (the node
     that this is a successor of) and to the actual state for this node. Note
@@ -74,17 +75,20 @@ class Node:
     an explanation of how the f and h values are handled. You will not need to
     subclass this class."""
 
-    def __init__(self, state, parent=None, action=None, path_cost=0):
+    def __init__(self, state, parent=None, action=None, path_cost=0, heuristic_cost=None):
         """Create a search tree Node, derived from a parent by an action."""
         self.state = state
         self.parent = parent
         self.action = action
         self.path_cost = path_cost
+        self.heuristic_cost = heuristic_cost
         self.depth = 0
         if parent:
             self.depth = parent.depth + 1
 
     def __repr__(self):
+        if self.heuristic_cost is not None:
+            return f"({self.depth}, {self.path_cost}, {self.action}, {self.heuristic_cost}, {self.state})"
         return f"({self.depth}, {self.path_cost}, {self.action}, {self.state})"
 
     def __lt__(self, node):
@@ -101,7 +105,8 @@ class Node:
     def child_node(self, problem, action):
         """[Figure 3.10]"""
         next_state = problem.result(self.state, action)
-        next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
+        next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state), 
+            problem.heuristic_cost(next_state))
         return next_node
 
     def solution(self):
@@ -141,7 +146,6 @@ class Node:
         # with the same state in a Hash Table
         return hash(self.state)
 
-# ______________________________________________________________________________
 
 class State(tuple):
 
@@ -162,10 +166,10 @@ class State(tuple):
         elif    orientation == 2: return 'South'
         elif    orientation == 3: return 'West'
 
-# ______________________________________________________________________________
-# Uninformed Search algorithms
-# ______________________________________________________________________________
 
+# ##############################################################################
+# Search algorithms
+# ##############################################################################
 
 class GraphSearch():
 
@@ -201,10 +205,10 @@ class GraphSearch():
             # logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
 
             if goal_found:
-                return self.node, self.frontier, self.explored
+                return True, self.node, self.frontier, self.explored
 
         logging.debug(f"Cannot find a solution.")
-        return None, self.frontier, self.explored
+        return False, self.node, self.frontier, self.explored
 
     def search(self):
         """Execute the actions and checks of the specific search algorithm."""
@@ -263,7 +267,7 @@ class BreadthFirstGraphSearch(GraphSearch):
         self.created_nodes += len(successors)
 
         for child in successors:
-            if not is_repeated_node(child):
+            if not self.is_repeated_node(child):
                 if self.check(child):
                     self.node = child
                     return True
@@ -277,16 +281,16 @@ class BreadthFirstGraphSearch(GraphSearch):
 
 class BestFirstGraphSearch(GraphSearch):
 
-    def __init__(self, f):
-        super().__init__()
-        self.f = f
+    def __init__(self, problem, f=None):
+        super().__init__(problem)
+        self.f = lambda n: n.path_cost
 
     def initialize(self):
-        self.f = memoize(f, 'f')
+        self.f = memoize(self.f, 'f')
 
-        self.node = Node(problem.initial)
-        self.frontier = PriorityQueue('min', f)
-        self.frontier.append(node)
+        self.node = Node(self.problem.initial, heuristic_cost=self.problem.heuristic_cost(self.problem.initial))
+        self.frontier = PriorityQueue('min', self.f)
+        self.frontier.append(self.node)
 
     def search(self):
 
@@ -312,140 +316,13 @@ class BestFirstGraphSearch(GraphSearch):
 
     def is_repeated_node(self, node):
 
-        if child in self.frontier:  # check that the new node has a lower cost than the previously visited
-            return self.f(child) >= self.frontier[child]
-        return child.state in self.explored  # if it is not in the frontier, check if it is in the explored list
+        if node in self.frontier:  # check that the new node has a lower cost than the previously visited
+            return self.f(node) >= self.frontier[node]
+        return node.state in self.explored  # if it is not in the frontier, check if it is in the explored list
 
 
-def depth_first_graph_search(problem):
-    """
-    [Figure 3.7]
-    Search the deepest nodes in the search tree first.
-    Search through the successors of a problem to find a goal.
-    The argument frontier should be an empty queue.
-    Does not get trapped by loops.
-    If two paths reach a state, only use the first one.
-    """
+class AstarGraphSearch(BestFirstGraphSearch):
 
-    frontier = [(Node(problem.initial))]  # Stack
-    explored = set()
-    iteration = 0
-
-    while frontier:
-        logging.debug(f"# Iteration {iteration}")
-        iteration += 1
-
-        node = frontier.pop()
-
-        if problem.goal_test(node.state):
-            logging.debug(f"Solution found: {node}")
-            return node, frontier, explored
-
-        explored.add(node.state)
-        frontier.extend(child for child in node.expand(problem)
-                        if child.state not in explored and child not in frontier)
-
-        logging.debug(f"Frontier: {frontier}")
-        logging.debug(f"Explored list: {explored}")
-
-    logging.debug(f"Cannot find a solution.")
-    return None, frontier, explored
-
-
-def breadth_first_graph_search(problem):
-    """[Figure 3.11]
-    Note that this function can be implemented in a
-    single line as below:
-    return graph_search(problem, FIFOQueue())
-    """
-
-    node = Node(problem.initial)
-    if problem.goal_test(node.state):
-        return node, [], set()
-
-    frontier = deque([node])
-    explored = set()
-    iteration = 0
-
-    while frontier:
-        logging.debug(f"# Iteration {iteration}")
-        iteration += 1
-
-        node = frontier.popleft()
-        explored.add(node.state)
-        for child in node.expand(problem):
-            if child.state not in explored and child not in frontier:
-
-                if problem.goal_test(child.state):
-                    logging.debug(f"Solution found: {child}")
-                    return child, frontier, explored
-
-                frontier.append(child)
-                logging.debug(f"Frontier: {frontier}")
-                logging.debug(f"Explored list: {explored}")
-
-    logging.debug(f"Cannot find a solution.")
-    return None, frontier, explored
-
-
-def best_first_graph_search(problem, f, display=False):
-    """Search the nodes with the lowest f scores first.
-    You specify the function f(node) that you want to minimize; for example,
-    if f is a heuristic estimate to the goal, then we have greedy best
-    first search; if f is node.depth then we have breadth-first search.
-    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
-    values will be cached on the nodes as they are computed. So after doing
-    a best first search you can examine the f values of the path returned."""
-
-    f = memoize(f, 'f')
-    node = Node(problem.initial)
-
-    frontier = PriorityQueue('min', f)
-    frontier.append(node)
-    explored = set()
-    iteration = 0
-
-    while frontier:
-        logging.debug(f"# Iteration {iteration}")
-        iteration += 1
-
-        node = frontier.pop()
-
-        if problem.goal_test(node.state):
-            # if display:
-            #     print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
-            logging.debug(f"Solution found: {node}")
-            return node, frontier, explored
-
-        explored.add(node.state)
-        for child in node.expand(problem):
-
-            if child.state not in explored and child not in frontier:
-                frontier.append(child)
-
-            elif child in frontier:
-                if f(child) < frontier[child]:
-                    del frontier[child]
-                    frontier.append(child)
-
-            logging.debug(f"Frontier: {frontier}")
-            logging.debug(f"Explored list: {explored}")
-
-    logging.debug(f"Cannot find a solution.")
-    return None, frontier, explored
-
-# ______________________________________________________________________________
-# Informed (Heuristic) Search
-
-greedy_best_first_graph_search = best_first_graph_search
-
-# Greedy best-first search is accomplished by specifying f(n) = h(n).
-
-def astar_search(problem, h=None, display=False):
-    """A* search is best-first graph search with f(n) = g(n)+h(n).
-    You need to specify the h function when you call astar_search, or
-    else in your Problem subclass."""
-    h = memoize(h or problem.h, 'h')
-    return best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
-
-
+    def __init__(self, problem):
+        super().__init__(problem)
+        self.f = lambda n: n.path_cost + problem.heuristic_cost(n.state)

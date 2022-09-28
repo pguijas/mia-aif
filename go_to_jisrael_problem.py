@@ -2,32 +2,24 @@ import argparse
 import logging
 import sys
 
-from search import Problem, depth_first_graph_search, breadth_first_graph_search, State, BreadthFirstGraphSearch, DepthFirstGraphSearch
+from search import Problem, State, BreadthFirstGraphSearch, DepthFirstGraphSearch, AstarGraphSearch
 from map import Map
+
 
 class GoToJisraelProblem(Problem):
 
-    def __init__(self, problem_file):
-
+    def __init__(self, problem_file, h=0):
         self.map = Map(problem_file)
-        self.table = self.map.table
-
         super().__init__(State(*self.map.initial), State(*self.map.goal))
-
-        # print("Table: {} \nInit state: {} \nGoal state: {}".format(  # f-strings?
-        #     "".join(["\n\t"+str(x) for x in self.table]),
-        #     str(self.initial),
-        #     str(self.goal)
-        # ))
+        
+        self.table = self.map.table
+        self.h = eval(f"self.h{h}")
 
     def actions(self, state):
 
-        #
-        # DUDA, LA QUE PASABA CON LA ROTACION DEL OBJETIVO¿?¿?¿?
-        #
-
         # Check if can move
         can_move = True
+
         if state[2] == 0 and state[0] == 0:                     # /\
             logging.debug(f"Cannot go up.")
             can_move = False
@@ -51,61 +43,81 @@ class GoToJisraelProblem(Problem):
             return ["ROTATE_L", "ROTATE_R"]
 
     def result(self, state, action):
-        y,x,rot = state
-        if action=="ROTATE_L":
-            # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot-1)%4)))
-            return State(y,x,(rot-1)%4)
+        y, x, orientation = state
 
-        elif action=="ROTATE_R":
-            # logging.debug("State: " + str(state) + " Action: " + action + " Result: " + str((y,x,(rot+1)%4)))
-            return State(y,x,(rot+1)%4)
-
-        elif action=="MOVE":
-            if rot == 0:    return State(y-1,x,0)
-            elif rot == 1:  return State(y,x+1,1)
-            elif rot == 2:  return State(y+1,x,2)
-            elif rot == 3:  return State(y,x-1,3)
+        if action == "ROTATE_L":    return State(y, x, (orientation - 1) % 4)
+        elif action == "ROTATE_R":  return State(y, x, (orientation + 1) % 4)
+        elif action == "MOVE":
+            if orientation == 0:    return State(y - 1, x, 0)
+            elif orientation == 1:  return State(y, x + 1, 1)
+            elif orientation == 2:  return State(y + 1, x, 2)
+            elif orientation == 3:  return State(y, x - 1, 3)
 
     def goal_test(self, state):
-        y1,x1,_ = state
-        y2,x2,_ = self.goal
+        y1, x1, _ = state
+        y2, x2, _ = self.goal
         return y1 == y2 and x1 == x2
 
     def path_cost(self, c, state1, action, state2):
-        # Revisar !!! -> NO REVISE EL ENUNCIADO BIEN
-        if action=="MOVE":
-            y,x,_ = state2
+        if action == "MOVE":
+            y, x, _ = state2
             return c + self.table[y][x]
         else:
             return c + 1
 
-    def value(self, state):
-        pass
+    def heuristic_cost(self, state):
+        return self.h(state)
 
-    def h(self, node):
-        pass
+    def h0(self, state):
+        """No heuristic function."""
+        return None
+
+    def h1(self, state):
+        """Manhattan distance heuristic function."""
+        return abs(state.x - self.goal[1]) + abs(state.y - self.goal[0])
+
+    def h2(self, state):
+        """Manhattan distance + rotations heuristic function."""
+
+        # Manhattan distance
+        goal_y, goal_x, _ = self.goal
+        manhattan_distance = abs(state.x - goal_x) + abs(state.y - goal_y)
+
+        # rotations needed to align one orientation, x, with the other, y
+        r = lambda x,y : max(abs(x - y) % 2, abs(abs(x - y) % 3))
+
+        north_south = (state.y < goal_y) * 2  # 0: North, 2: South
+        ver_rotations = r(state.orientation, north_south) * (state.x != goal_x)
+
+        west_east = (state.x > goal_x) * 2 + 1  # 1: East, 3: West
+        hor_rotations = r(state.orientation, west_east) * (state.y != goal_y)
+
+        total_rotations = min(ver_rotations + hor_rotations, 2)
+        return manhattan_distance + total_rotations
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Solve the Jisrael problem.')
     parser.add_argument('file', type=str, help='file with the terrain, the initial and the goal positions')
+    parser.add_argument('--algorithm', type=str, default="BreadthFirst", help='[DepthFirst, BreadthFirst, Astar]')
+    parser.add_argument('--h', type=int, default=0, help='0: no heuristic function, 1: Manhattan distance, 2: Manhattan distance + rotations')
     parser.add_argument('--debug', default=False, action='store_true', help='true to print the search process')
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO, format='%(message)s')
 
-    #
-    # REVIEW RESULTS, NON OPTIMAL SOLUTIONS
-    #
+    problem = GoToJisraelProblem(args.file, args.h)
 
-    problem = GoToJisraelProblem(args.file)
-    search = DepthFirstGraphSearch(problem)
-    node, frontier, explored = search.execute()
+    search = eval(f"{args.algorithm}GraphSearch(problem)")
+    found, node, frontier, explored = search.execute()
 
     logging.info("#########################################")
-    logging.info("PATH")
+    logging.info("# PATH")
     logging.info("#########################################")
+
+    if not found:
+        logging.info("The goal node could not be found. The path to the last examined node is shown.")
     node.print_path()
 
     logging.info("#########################################")
