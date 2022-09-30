@@ -1,9 +1,5 @@
 """
-Search (Chapters 3-4)
-
-The way to use this code is to subclass Problem to create a class of problems,
-then create problem instances and solve them with calls to the various search
-functions.
+Code adapted from AIMA project: https://github.com/aimacode/aima-python
 """
 
 from collections import deque
@@ -94,7 +90,7 @@ class Node:
     def __lt__(self, node):
         return self.state < node.state
 
-    def expand(self, problem, is_repeated=None):
+    def expand(self, problem, is_repeated):
         """List the nodes reachable  (and not already created) in one step from this node."""
         logging.debug(f"Expanding {self}")
         children = [self.child_node(problem, action)
@@ -152,14 +148,17 @@ class Node:
 # ##############################################################################
 
 class GraphSearch():
+    """Abstract class that implements main loop of the search process and prints 
+    the information related to the search such the state of the frontier of the
+    explored list."""
 
     def __init__(self, problem):
         self.problem = problem
         self.frontier = []
         self.explored = set()
-        self.node = None
-        self.finished = False
-        self.created_nodes = 0
+        self.node = None            # current Node in the search
+        self.finished = False       # True if a goal node is found
+        self.created_nodes = 0      # total number of nodes created
 
     def initialize(self):
         """Prepare data structures (frontier) and execute the corresponding checks."""
@@ -173,8 +172,8 @@ class GraphSearch():
         if self.finished:  # the goal node is the initial node
             return True, self.node, [], set()
 
-        # Loop
-        iteration = 0
+        # Main loop of the algorithm
+        iteration = 1
         while self.frontier:
             logging.debug(f"# Iteration {iteration}")
             iteration += 1
@@ -213,6 +212,7 @@ class DepthFirstGraphSearch(GraphSearch):
 
     def search(self):
 
+        # This algorithm finishes when a goal node is EXPANDED
         self.node = self.frontier.pop()
         if self.check(self.node):
             return True
@@ -232,29 +232,29 @@ class DepthFirstGraphSearch(GraphSearch):
 class BreadthFirstGraphSearch(GraphSearch):
 
     def initialize(self):
-
         self.node = Node(self.problem.initial)
         self.check(self.node)
         self.frontier = deque([self.node])
 
     def search(self):
-
         self.node = self.frontier.popleft()
         self.explored.add(self.node.state)
-        
+
         # To be consistent with the order of DepthFirst searching (MOVE > ROTATE_R > ROTATE_L), the list is reversed.
         # This is because the actions returned by the problem are [ROTATE_R, ROTATE_L, MOVE], but DepthFirst
         # uses a Stack so, when popping an element, the one from the right has more priority.
         successors = self.node.expand(self.problem, self.is_repeated_node)
         successors = list(reversed(successors))
-
         self.created_nodes += len(successors)
 
         for child in successors:
             if not self.is_repeated_node(child):
+
+                # This algorithm finishes when a goal node is FOUND
                 if self.check(child):
                     self.node = child
                     return True
+
                 self.frontier.append(child)
 
         return False
@@ -277,7 +277,6 @@ class BestFirstGraphSearch(GraphSearch):
         self.frontier.append(self.node)
 
     def search(self):
-
         self.node = self.frontier.pop()
         if self.check(self.node):
             return True
@@ -299,10 +298,9 @@ class BestFirstGraphSearch(GraphSearch):
         return False
 
     def is_repeated_node(self, node):
-
-        if node in self.frontier:  # check that the new node has a lower cost than the previously visited
+        if node in self.frontier:
             return self.f(node) >= self.frontier[node]
-        return node.state in self.explored  # if it is not in the frontier, check if it is in the explored list
+        return node.state in self.explored
 
 
 class AstarGraphSearch(BestFirstGraphSearch):

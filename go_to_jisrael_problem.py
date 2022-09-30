@@ -115,6 +115,7 @@ class State(tuple):
         elif    orientation == 2: return 'South'
         elif    orientation == 3: return 'West'
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Solve the Jisrael problem.')

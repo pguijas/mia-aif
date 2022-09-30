@@ -1,9 +1,10 @@
+"""
+Code adapted from AIMA project: https://github.com/aimacode/aima-python
+"""
+
 import functools
 import heapq
 
-
-# ______________________________________________________________________________
-# Misc Functions
 
 def memoize(fn, slot=None, maxsize=32):
     """Memoize fn: make it remember the computed value for any argument list.
@@ -23,12 +24,6 @@ def memoize(fn, slot=None, maxsize=32):
             return fn(*args)
 
     return memoized_fn
-
-
-# ______________________________________________________________________________
-# Queues: Stack, FIFOQueue, PriorityQueue
-# Stack and FIFOQueue are implemented as list and collection.deque
-# PriorityQueue is implemented here
 
 
 class PriorityQueue:
