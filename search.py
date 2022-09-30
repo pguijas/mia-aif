@@ -147,26 +147,6 @@ class Node:
         return hash(self.state)
 
 
-class State(tuple):
-
-    def __init__(self, x, y, orientation):
-        self.x = x
-        self.y = y
-        self.orientation = orientation
-
-    def __new__(cls, x, y, orientation):
-        return super(State, cls).__new__(cls, tuple((x, y, orientation)))
-
-    def __repr__(self):
-        return f"({self.x}, {self.y}, {self.format_orientation(self.orientation)})"
-
-    def format_orientation(self, orientation):
-        if      orientation == 0: return 'North'
-        elif    orientation == 1: return 'East'
-        elif    orientation == 2: return 'South'
-        elif    orientation == 3: return 'West'
-
-
 # ##############################################################################
 # Search algorithms
 # ##############################################################################
@@ -201,8 +181,8 @@ class GraphSearch():
 
             goal_found = self.search()
             logging.debug(f"Created nodes: {self.created_nodes}")
-            # logging.debug(f"Frontier (size={len(self.frontier)}): {self.frontier}")
-            # logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
+            logging.debug(f"Frontier (size={len(self.frontier)}): {self.frontier}")
+            logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
 
             if goal_found:
                 return True, self.node, self.frontier, self.explored
@@ -219,8 +199,7 @@ class GraphSearch():
         if self.problem.goal_test(node.state):
             logging.debug(f"Solution found: {node}")
             self.finished = True
-            return True
-        return False
+        return self.finished
 
     def is_repeated_node(self, node):
         """Check if the node has already been created."""
@@ -262,8 +241,13 @@ class BreadthFirstGraphSearch(GraphSearch):
 
         self.node = self.frontier.popleft()
         self.explored.add(self.node.state)
-
+        
+        # To be consistent with the order of DepthFirst searching (MOVE > ROTATE_R > ROTATE_L), the list is reversed.
+        # This is because the actions returned by the problem are [ROTATE_R, ROTATE_L, MOVE], but DepthFirst
+        # uses a Stack so, when popping an element, the one from the right has more priority.
         successors = self.node.expand(self.problem, self.is_repeated_node)
+        successors = list(reversed(successors))
+
         self.created_nodes += len(successors)
 
         for child in successors:

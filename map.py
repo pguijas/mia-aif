@@ -13,7 +13,7 @@ class Map:
 
 
     def __repr__(self):
-        return "".join(["\n\t" + str(x) for x in self.table])
+        return "\n\t".join([str(x) for x in self.table])
 
 
     def load(self, file):
@@ -30,19 +30,18 @@ class Map:
             elements = [int(x) for x in lines.split()]
 
             # Load the size
-            self.size_y, self.size_x  = elements[0:2]
+            self.size_x, self.size_y  = elements[0:2]
 
             # Load the table as a list of lists
             self.table = []
-            for y in range(self.size_y):
-                r1 = 2 + self.size_x * y
-                r2 = 2 + self.size_x * (y + 1)
+            for x in range(self.size_x):
+                r1 = 2 + self.size_y * x
+                r2 = 2 + self.size_y * (x + 1)
                 self.table.append(elements[r1:r2])
 
             # Load the initial and goal positions
-            self.initial = tuple(elements[2 + self.size_y * self.size_x:5 + self.size_y * self.size_x])
-            self.goal = tuple(elements[5 + self.size_y * self.size_x:8 + self.size_y * self.size_x])
-
+            self.initial = tuple(elements[2 + self.size_x * self.size_y:5 + self.size_x * self.size_y])
+            self.goal = tuple(elements[5 + self.size_x * self.size_y:8 + self.size_x * self.size_y])
 
     def save(self, file):
         """Save the map in a file."""
@@ -50,11 +49,10 @@ class Map:
         with open(file, 'w', encoding="utf-8-sig") as f:
 
             # Write dimensions
-            f.write(f"{self.size_x} {self.size_y}")
+            f.write(f"{self.size_x} {self.size_y}\n")
 
             # Write table
-            table_str = self.__repr__()
-            table_str = table_str.replace('\t', "").replace('[', "").replace(']', "").replace(',', "")
+            table_str = str(self).replace('\t', "").replace('[', "").replace(']', "").replace(',', "")
             f.write(table_str)
 
             # Write initial and goal
@@ -71,14 +69,14 @@ class Map:
         # Establish the initial and goal positions
         self.initial = initial
         if self.initial is None:
-            self.initial = (randint(0, size_y-1), randint(0, size_x-1))
+            self.initial = (randint(0, size_x - 1), randint(0, size_y - 1))
 
         self.goal = goal
         if self.goal is None:
-            self.goal = (randint(0, size_y-1), randint(0, size_x-1))
+            self.goal = (randint(0, size_x - 1), randint(0, size_y - 1))
 
         # Generate the terrain
-        self.table = [[randint(min_cost, max_cost) for x in range(size_y)] for y in range(size_x)]
+        self.table = [[randint(min_cost, max_cost) for y in range(size_y)] for x in range(size_x)]
 
         # Save the map in a file
         if output is not None:
