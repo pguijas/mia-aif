@@ -55,11 +55,6 @@ class Problem:
         and action. The default method costs 1 for every step in the path."""
         return c + 1
 
-    def value(self, state):
-        """For optimization problems, each state has a value. Hill Climbing
-        and related algorithms try to maximize this value."""
-        raise NotImplementedError
-
 
 class Node:
     """A node in a search tree. Contains a pointer to the parent (the node
