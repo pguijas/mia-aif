@@ -178,12 +178,12 @@ class GraphSearch():
             logging.debug(f"# Iteration {iteration}")
             iteration += 1
 
-            goal_found = self.search()
+            self.search()
             logging.debug(f"Created nodes: {self.created_nodes}")
             logging.debug(f"Frontier (size={len(self.frontier)}): {self.frontier}")
             logging.debug(f"Explored list (size={len(self.explored)}): {self.explored}")
 
-            if goal_found:
+            if self.finished:
                 return True, self.node, self.frontier, self.explored
 
         logging.debug(f"Cannot find a solution.")
@@ -215,15 +215,13 @@ class DepthFirstGraphSearch(GraphSearch):
         # This algorithm finishes when a goal node is EXPANDED
         self.node = self.frontier.pop()
         if self.check(self.node):
-            return True
+            return
 
         self.explored.add(self.node.state)
 
         successors = [child for child in self.node.expand(self.problem, self.is_repeated_node)]
         self.created_nodes += len(successors)
         self.frontier.extend(child for child in successors if not self.is_repeated_node(child))
-
-        return False
 
     def is_repeated_node(self, node):
         return node.state in self.explored or node in self.frontier
@@ -253,11 +251,9 @@ class BreadthFirstGraphSearch(GraphSearch):
                 # This algorithm finishes when a goal node is FOUND
                 if self.check(child):
                     self.node = child
-                    return True
+                    return
 
                 self.frontier.append(child)
-
-        return False
 
     def is_repeated_node(self, node):
         return node.state in self.explored or node in self.frontier
@@ -279,7 +275,7 @@ class BestFirstGraphSearch(GraphSearch):
     def search(self):
         self.node = self.frontier.pop()
         if self.check(self.node):
-            return True
+            return
 
         self.explored.add(self.node.state)
 
@@ -294,8 +290,6 @@ class BestFirstGraphSearch(GraphSearch):
             elif child in self.frontier and self.f(child) < self.frontier[child]:
                 del self.frontier[child]
                 self.frontier.append(child)
-
-        return False
 
     def is_repeated_node(self, node):
         if node in self.frontier:
