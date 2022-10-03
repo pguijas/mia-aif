@@ -99,7 +99,7 @@ class Node:
         return children
 
     def child_node(self, problem, action):
-        """[Figure 3.10]"""
+        """Return the reachable node from this node and a specific action."""
         next_state = problem.result(self.state, action)
         next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state), 
             problem.heuristic_cost(next_state))
