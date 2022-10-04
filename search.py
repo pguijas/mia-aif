@@ -70,7 +70,7 @@ class Node:
     an explanation of how the f and h values are handled. You will not need to
     subclass this class."""
 
-    def __init__(self, state, parent=None, action=None, path_cost=0, heuristic_cost=None):
+    def __init__(self, state, parent=None, action=None, path_cost=0, heuristic_cost=None, using_heuristic=False):
         """Create a search tree Node, derived from a parent by an action."""
         self.state = state
         self.parent = parent
@@ -80,9 +80,10 @@ class Node:
         self.depth = 0
         if parent:
             self.depth = parent.depth + 1
+        self.using_heuristic = using_heuristic
 
     def __repr__(self):
-        if self.heuristic_cost is not None:
+        if self.using_heuristic:
             return f"({self.depth}, {self.path_cost}, {self.action}, {self.heuristic_cost}, {self.state})"
         return f"({self.depth}, {self.path_cost}, {self.action}, {self.state})"
 
@@ -101,7 +102,7 @@ class Node:
         """Return the reachable node from this node and a specific action."""
         next_state = problem.result(self.state, action)
         next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state), 
-            problem.heuristic_cost(next_state))
+            problem.heuristic_cost(next_state), using_heuristic=self.using_heuristic)
         return next_node
 
     def solution(self):
@@ -207,7 +208,7 @@ class GraphSearch():
 class DepthFirstGraphSearch(GraphSearch):
 
     def initialize(self):
-        self.frontier = [(Node(self.problem.initial))]  # Stack
+        self.frontier = [(Node(self.problem.initial,using_heuristic=False))]  # Stack
 
     def search(self):
 
@@ -229,7 +230,7 @@ class DepthFirstGraphSearch(GraphSearch):
 class BreadthFirstGraphSearch(GraphSearch):
 
     def initialize(self):
-        self.node = Node(self.problem.initial)
+        self.node = Node(self.problem.initial,using_heuristic=False)
         self.check(self.node)
         self.frontier = deque([self.node])
 
@@ -267,7 +268,7 @@ class BestFirstGraphSearch(GraphSearch):
     def initialize(self):
         self.f = memoize(self.f, 'f')
 
-        self.node = Node(self.problem.initial, heuristic_cost=self.problem.heuristic_cost(self.problem.initial))
+        self.node = Node(self.problem.initial, heuristic_cost=self.problem.heuristic_cost(self.problem.initial), using_heuristic=True)
         self.frontier = PriorityQueue('min', self.f)
         self.frontier.append(self.node)
 
