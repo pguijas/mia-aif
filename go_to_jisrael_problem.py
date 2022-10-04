@@ -84,7 +84,7 @@ class GoToJisraelProblem(Problem):
         manhattan_distance = abs(state.x - goal_x) + abs(state.y - goal_y)
 
         # rotations needed to align one orientation, x, with the other, y
-        r = lambda x,y : max(abs(x - y) % 2, abs(abs(x - y) % 3))
+        r = lambda x,y : max(abs(x - y) % 2, abs(x - y) % 3)
 
         north_south = (state.x < goal_x) * 2  # 0: North, 2: South
         ver_rotations = r(state.orientation, north_south) * (state.x != goal_x)
