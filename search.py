@@ -55,6 +55,10 @@ class Problem:
         and action. The default method costs 1 for every step in the path."""
         return c + 1
 
+    def heuristic_cost(self, state):
+        """Return the heuristic cost of a state. The heuristic must be
+        admissible to ensure correctness. The default method returns 0."""
+        return 0
 
 class Node:
     """A node in a search tree. Contains a pointer to the parent (the node

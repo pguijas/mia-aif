@@ -70,7 +70,7 @@ class GoToJisraelProblem(Problem):
 
     def h0(self, state):
         """No heuristic function."""
-        raise NotImplementedError("No heuristic function.")
+        return super().heuristic_cost(state)
 
     def h1(self, state):
         """Manhattan distance heuristic function."""
