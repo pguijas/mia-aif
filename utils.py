@@ -86,4 +86,6 @@ class PriorityQueue:
     def __repr__(self):
         return str(list(map(lambda x: x[1], self.heap)))
 
-
+def is_in(elt, seq):
+    """Check if element is in a list."""
+    return any(x is elt for x in seq)

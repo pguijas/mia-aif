@@ -4,7 +4,7 @@ Code adapted from AIMA project: https://github.com/aimacode/aima-python
 
 from collections import deque
 import logging
-from utils import memoize, PriorityQueue
+from utils import is_in, memoize, PriorityQueue
 
 
 # ##############################################################################

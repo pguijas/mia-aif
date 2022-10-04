@@ -70,7 +70,7 @@ class GoToJisraelProblem(Problem):
 
     def h0(self, state):
         """No heuristic function."""
-        return None
+        raise NotImplementedError("No heuristic function.")
 
     def h1(self, state):
         """Manhattan distance heuristic function."""
@@ -125,10 +125,13 @@ if __name__ == '__main__':
     parser.add_argument('--debug', default=False, action='store_true', help='true to print the search process')
     args = parser.parse_args()
 
+    # Configure logging
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO, format='%(message)s')
 
+    # Load problem
     problem = GoToJisraelProblem(args.file, args.h)
 
+    # Solve problem with an specific algorithm
     search = eval(f"{args.algorithm}GraphSearch(problem)")
     found, node, frontier, explored = search.execute()
 
